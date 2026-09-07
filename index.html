@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CHAO: Complex Ginzburg-Landau & Spiral Defect Turbulence Engine</title>
+    <meta name="description" content="Real-time interactive 2D Complex Ginzburg-Landau Equation (CGLE) spectral solver, Benjamin-Feir-Newell defect chaos, topological phase singularities, and order parameter dynamics.">
+    <meta name="theme-color" content="#04060a">
+
+    <!-- Fonts & KaTeX Math Rendering -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Canvas Viewport -->
+    <main id="canvas-container">
+        <canvas id="cgle-canvas"></canvas>
+    </main>
+
+    <!-- Header Navigation -->
+    <header id="app-header">
+        <div class="brand-section">
+            <svg class="brand-logo" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="16" cy="16" r="14" stroke-dasharray="3 3"/>
+                <path d="M16 6 C21.5 6, 26 10.5, 26 16 C26 21.5, 21.5 26, 16 26 C12 26, 9 23, 9 19 C9 15.5, 12 13, 15 13 C17.5 13, 19 14.5, 19 17 C19 18.5, 17.5 19.5, 16 19.5" stroke="var(--accent-cyan)" stroke-width="2.2"/>
+                <circle cx="16" cy="16" r="3" fill="var(--accent-magenta)"/>
+            </svg>
+            <div class="brand-title">
+                FOUNDRY // GINZBURG-LANDAU
+                <span class="brand-badge">CGLE-2D-CHAOS</span>
+            </div>
+        </div>
+
+        <div class="nav-center">
+            <div class="preset-selector-wrapper">
+                <span class="preset-label">PRESET:</span>
+                <select id="preset-select" class="preset-select">
+                    <option value="defect_chaos">Spiral Defect Turbulence (BFN Unstable)</option>
+                    <option value="archimedean">Rotating Archimedean Spiral</option>
+                    <option value="phase_turb">Phase Turbulence (Defect-Free)</option>
+                    <option value="chimera">Spatiotemporal Intermittency (Chimera)</option>
+                    <option value="target">Target Wave Pacemaker</option>
+                    <option value="dipole">Topological Bound Dipole Orbit</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="nav-right">
+            <button id="btn-audio" class="btn-icon" title="Toggle Topological Defect Acoustic Synthesizer">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                </svg>
+                <span>AUDIO OFF</span>
+            </button>
+            <button id="btn-theory" class="btn-icon" title="Mathematical & Physical Foundations">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+                <span>THEORY</span>
+            </button>
+            <button id="btn-toggle-controls" class="btn-icon" title="Toggle Parameter Controls">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+            </button>
+            <button id="btn-toggle-hud" class="btn-icon" title="Toggle Telemetry HUD">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <path d="M3 9h18M9 21V9"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Controls Sidebar -->
+    <aside id="controls-sidebar">
+        <div class="sidebar-header">
+            <span class="sidebar-title">CGLE NON-LINEAR PARAMETERS</span>
+        </div>
+
+        <div class="sidebar-scroll">
+            <!-- Dispersion & Detuning -->
+            <div class="control-group">
+                <div class="group-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                    DISPERSION & NON-LINEARITY
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Linear Dispersion ($c_1$)</span>
+                        <span id="val-c1" class="val-badge">-1.50</span>
+                    </div>
+                    <input type="range" id="slider-c1" min="-3.0" max="3.0" step="0.05" value="-1.50">
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Non-Linear Frequency Shift ($c_3$)</span>
+                        <span id="val-c3" class="val-badge">1.20</span>
+                    </div>
+                    <input type="range" id="slider-c3" min="-3.0" max="3.0" step="0.05" value="1.20">
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Linear Growth Rate ($\mu$)</span>
+                        <span id="val-mu" class="val-badge">1.00</span>
+                    </div>
+                    <input type="range" id="slider-mu" min="0.1" max="2.0" step="0.05" value="1.00">
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Time Step (Δt)</span>
+                        <span id="val-dt" class="val-badge">0.050</span>
+                    </div>
+                    <input type="range" id="slider-dt" min="0.01" max="0.10" step="0.005" value="0.050">
+                </div>
+
+                <div class="action-btn-grid">
+                    <button id="btn-play-pause" class="action-btn primary">PAUSE</button>
+                    <button id="btn-step" class="action-btn">STEP</button>
+                    <button id="btn-reset" class="action-btn danger">RESET SEED</button>
+                    <button id="btn-inject-noise" class="action-btn">INJECT NOISE</button>
+                </div>
+            </div>
+
+            <!-- Visualization Diagnostics -->
+            <div class="control-group">
+                <div class="group-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    DIAGNOSTIC COLORMAPS
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Order Parameter Mapping</span>
+                    </div>
+                    <select id="select-colormap" class="standard-select">
+                        <option value="phase_domain" selected>Phase Angle arg(A) (Domain Color)</option>
+                        <option value="amplitude">Amplitude Magnitude |A|</option>
+                        <option value="phase_gradient">Phase Gradient |∇φ| (Flow Speed)</option>
+                        <option value="real_part">Real Component Re(A)</option>
+                    </select>
+                </div>
+
+                <div class="toggle-row">
+                    <label for="check-defects" class="toggle-label">Topological Phase Singularities (±1)</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="check-defects" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="toggle-row">
+                    <label for="check-streamlines" class="toggle-label">Phase Gradient Velocity Streamlines</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="check-streamlines" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Interactive Cursor Tool -->
+            <div class="control-group">
+                <div class="group-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    INTERACTIVE PERTURBATION
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Cursor Action Mode</span>
+                    </div>
+                    <select id="select-tool" class="standard-select">
+                        <option value="razor" selected>Phase Razor (Defect Nucleation)</option>
+                        <option value="amplitude_pin">Amplitude Zero Pin (Vortex Anchor)</option>
+                        <option value="pacemaker">Frequency Pacemaker Hotspot</option>
+                        <option value="noise">Stochastic Perturbation</option>
+                    </select>
+                </div>
+
+                <div class="control-item">
+                    <div class="control-label-row">
+                        <span>Tool Radius</span>
+                        <span id="val-tool-radius" class="val-badge">2.5</span>
+                    </div>
+                    <input type="range" id="slider-tool-radius" min="1.0" max="6.0" step="0.5" value="2.5">
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Telemetry HUD -->
+    <section id="telemetry-hud">
+        <div class="hud-header">
+            <span class="hud-title">SPATIOTEMPORAL TELEMETRY</span>
+            <div class="live-indicator">
+                <span class="live-dot"></span>
+                <span>ONLINE</span>
+            </div>
+        </div>
+
+        <div class="hud-grid">
+            <div class="hud-metric">
+                <span class="metric-label">BENJAMIN-FEIR 1 + c₁c₃</span>
+                <span id="tel-bfn" class="metric-value magenta">-0.800 (UNSTABLE)</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">TOPOLOGICAL DEFECTS</span>
+                <span id="tel-defects" class="metric-value cyan">0</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">NET TOPOLOGICAL CHARGE</span>
+                <span id="tel-charge" class="metric-value">0</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">MEAN AMPLITUDE ⟨|A|⟩</span>
+                <span id="tel-mean-amp" class="metric-value gold">0.000</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">PEAK AMPLITUDE |A|_max</span>
+                <span id="tel-max-amp" class="metric-value">0.000</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">COHERENCE LENGTH ξ_c</span>
+                <span id="tel-coherence" class="metric-value green">1.42</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">MEAN FREQUENCY ω̄</span>
+                <span id="tel-omega" class="metric-value">-1.18 rad/s</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">SPECTRAL RESOLUTION</span>
+                <span class="metric-value">128 × 128 FFT</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">SOLVER METHOD</span>
+                <span class="metric-value">Strang Spectral Splitting</span>
+            </div>
+            <div class="hud-metric">
+                <span class="metric-label">FRAME RATE</span>
+                <span id="tel-fps" class="metric-value green">60 FPS</span>
+            </div>
+        </div>
+
+        <div class="hud-footer">
+            <span>REGIME: DEFECT TURBULENCE</span>
+            <span id="tel-time">t = 0.00</span>
+        </div>
+    </section>
+
+    <!-- Mathematical Theory Modal -->
+    <div id="theory-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <span class="modal-title">THEORETICAL FOUNDATIONS OF THE COMPLEX GINZBURG-LANDAU EQUATION</span>
+                <button id="btn-close-modal" class="btn-close">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <h2>1. Universal Amplitude Equation Near a Hopf Bifurcation</h2>
+                <p>
+                    The <strong>Complex Ginzburg-Landau Equation (CGLE)</strong> is the universal normal form describing spatially extended non-equilibrium systems undergoing a continuous transition from a stationary state to oscillatory motion via a supercritical <strong>Hopf bifurcation</strong>:
+                </p>
+                <div class="formula-block">
+                    $$\frac{\partial A(\vec{r}, t)}{\partial t} = \mu A + (1 + i c_1) \nabla^2 A - (1 - i c_3) |A|^2 A$$
+                </div>
+                <p>
+                    where $A(\vec{r}, t) \in \mathbb{C}$ is the complex order parameter, $c_1$ parameterizes linear dispersion, $c_3$ parameterizes non-linear frequency detuning, and $\mu$ is the linear growth rate.
+                </p>
+
+                <h2>2. The Benjamin-Feir-Newell Instability</h2>
+                <p>
+                    The spatially uniform limit-cycle solution $A_0(t) = \sqrt{\mu} \, e^{i c_3 \mu t}$ is subject to sideband modulational perturbations. Linear stability analysis reveals the celebrated <strong>Benjamin-Feir-Newell (BFN) Criterion</strong>:
+                </p>
+                <div class="formula-block">
+                    $$1 + c_1 c_3 < 0$$
+                </div>
+                <p>
+                    When $1 + c_1 c_3 < 0$, long-wavelength phase perturbations become dynamically unstable and grow exponentially, destroying spatial coherence and plunging the system into <strong>spatiotemporal defect turbulence</strong>.
+                </p>
+
+                <h2>3. Topological Phase Singularities & Spiral Defects</h2>
+                <p>
+                    Decomposing $A = R(\vec{r}, t) e^{i \phi(\vec{r}, t)}$, the phase $\phi$ is undefined wherever the amplitude vanishes ($R = 0$). These nodal points represent <strong>topological defects</strong> (vortices and anti-vortices).
+                </p>
+                <p>
+                    The topological winding number $n$ around any closed circuit $\Gamma$ enclosing a singularity is:
+                </p>
+                <div class="formula-block">
+                    $$n = \frac{1}{2\pi} \oint_\Gamma \nabla \phi \cdot d\vec{r} \in \{\pm 1\}$$
+                </div>
+                <p>
+                    Phase singularities act as topological charge carriers. In the defect turbulent regime, defects are continuously nucleated in pairs with opposite charge ($+1$ and $-1$), orbit chaotic phase trajectories, collide, and undergo topological annihilation!
+                </p>
+
+                <h2>4. Exact Analytic Solution for Non-Linear Reaction Step</h2>
+                <p>
+                    Separating the local non-linear reaction step $\frac{dA}{dt} = \mu A - (1 - i c_3) |A|^2 A$ into radial and phase components:
+                </p>
+                <div class="formula-block">
+                    $$\frac{dR}{dt} = \mu R - R^3, \quad \frac{d\phi}{dt} = c_3 R^2$$
+                </div>
+                <p>
+                    Integrating yields an **exact closed-form analytic solution** over time step $\Delta t$:
+                </p>
+                <div class="formula-block">
+                    $$R(t + \Delta t) = \frac{R_0 e^{\mu \Delta t}}{\sqrt{1 + \frac{R_0^2}{\mu} (e^{2\mu \Delta t} - 1)}}, \quad \Delta \phi = \frac{c_3}{2} \ln\left(1 + \frac{R_0^2}{\mu} (e^{2\mu \Delta t} - 1)\right)$$
+                </div>
+                <p>
+                    This exact algebraic solution eliminates all non-linear numerical truncation error and prevents runaway amplitude blowups for arbitrary $\Delta t$.
+                </p>
+
+                <h2>5. Second-Order Strang Operator Splitting Scheme</h2>
+                <p>
+                    The linear dispersion step is integrated in Fourier space:
+                </p>
+                <div class="formula-block">
+                    $$\tilde{A}(t + \Delta t, \vec{k}) = \exp\left( - (1 + i c_1) k^2 \Delta t \right) \tilde{A}(t, \vec{k})$$
+                </div>
+                <p>
+                    Because $\text{Re}(-(1 + i c_1) k^2 \Delta t) = -k^2 \Delta t \le 0$, high-frequency noise is naturally damped. Symmetrizing via Strang splitting achieves second-order temporal convergence $\mathcal{O}(\Delta t^2)$ with spectral spatial accuracy.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
